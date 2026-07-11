@@ -1,0 +1,35 @@
+# Self-contained Android build environment: JDK 17 + system Gradle + Android SDK
+# command-line tools/platform/build-tools. No project files are baked into the
+# image - it's mounted at /workspace at run time, so editing Kotlin source doesn't
+# require rebuilding the image.
+FROM docker.io/library/eclipse-temurin:17-jdk-jammy
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV ANDROID_HOME=/opt/android-sdk
+ENV GRADLE_VERSION=8.9
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH="${GRADLE_HOME}/bin:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl unzip ca-certificates git && \
+    rm -rf /var/lib/apt/lists/*
+
+# --- Gradle, installed system-wide so no gradle-wrapper.jar needs to be vendored ---
+RUN curl -fsSL -o /tmp/gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" && \
+    unzip -q /tmp/gradle.zip -d /opt && \
+    mv "/opt/gradle-${GRADLE_VERSION}" "${GRADLE_HOME}" && \
+    rm /tmp/gradle.zip
+
+# --- Android SDK command-line tools + the platform/build-tools this project needs ---
+ARG CMDLINE_TOOLS_VERSION=11076708
+RUN mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools" && \
+    curl -fsSL -o /tmp/cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip" && \
+    unzip -q /tmp/cmdline-tools.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools" && \
+    mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest" && \
+    rm /tmp/cmdline-tools.zip
+
+RUN yes | sdkmanager --licenses > /dev/null && \
+    sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+
+WORKDIR /workspace

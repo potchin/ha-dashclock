@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.DeviceDefault.Light"
+        android:usesCleartextTraffic="true">
+        <!--
+          usesCleartextTraffic is enabled because many self-hosted Home Assistant
+          instances are reached over plain http:// on a LAN (no reverse-proxy TLS).
+          This is a personal-use, sideloaded app talking only to a URL you configure
+          yourself - if your HA instance is behind HTTPS, cleartext is simply unused.
+        -->
+
+        <!--
+          The DashClock extension service. Requirements satisfied here:
+            - ACTION_EXTENSION intent-filter + READ_EXTENSION_DATA permission: how
+              DashClock-family hosts (DashClock, Chronus, ...) discover and bind.
+            - protocolVersion=2 + worldReadable=true: required together for a host
+              OTHER than the signature-verified official DashClock app to be allowed
+              to bind (Chronus relies on this). See DashClockExtension's loadMetaData()
+              / IExtension.Stub#onInitialize() in the dashclock-api source.
+            - settingsActivity: qualified component name DashClock/Chronus will offer
+              as "Configure" for this extension.
+        -->
+        <service
+            android:name=".HaDashClockExtension"
+            android:exported="true"
+            android:icon="@drawable/ic_extension"
+            android:label="@string/extension_title"
+            android:permission="com.google.android.apps.dashclock.permission.READ_EXTENSION_DATA">
+            <intent-filter>
+                <action android:name="com.google.android.apps.dashclock.Extension" />
+            </intent-filter>
+
+            <meta-data
+                android:name="protocolVersion"
+                android:value="2" />
+            <meta-data
+                android:name="worldReadable"
+                android:value="true" />
+            <meta-data
+                android:name="description"
+                android:value="@string/extension_description" />
+            <meta-data
+                android:name="settingsActivity"
+                android:value=".SettingsActivity" />
+        </service>
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="@string/title_settings">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name=".RefreshSignalProvider"
+            android:authorities="uk.co.potchin.hadashclock.refresh"
+            android:exported="true" />
+
+        <activity
+            android:name=".RefreshTapActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:excludeFromRecents="true"
+            android:noHistory="true" />
+
+    </application>
+
+</manifest>
