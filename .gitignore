@@ -10,3 +10,9 @@ captures/
 .cxx/
 *.apk
 *.aab
+
+# Release signing material - never commit. See README.md "Releasing" section;
+# the real copy lives only in GitHub Actions secrets (and your own backup).
+keystore/
+*.jks
+*.keystore

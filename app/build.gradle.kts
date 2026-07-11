@@ -15,14 +15,44 @@ android {
         versionName = "1.0"
     }
 
+    // Release signing identity, supplied out-of-band (CI secrets, or your own local
+    // env vars) so the same key signs every release build - required for users to be
+    // able to install updates over an existing copy without uninstalling first.
+    // None of these values (nor the keystore file itself) are ever committed; see
+    // README.md "Releasing" section for how CI provides them.
+    val releaseStorePath = System.getenv("RELEASE_KEYSTORE_PATH")
+    val releaseStorePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+    val releaseKeyAlias = System.getenv("RELEASE_KEY_ALIAS")
+    val releaseKeyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+    val hasReleaseSigningEnv = !releaseStorePath.isNullOrBlank() &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank()
+
+    signingConfigs {
+        if (hasReleaseSigningEnv) {
+            create("release") {
+                storeFile = file(releaseStorePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Personal / sideload build: reuse the auto-generated debug keystore so
-            // `assembleRelease` produces an installable, self-signed APK with zero
-            // extra keystore setup. Replace with a dedicated signingConfig if you
-            // ever need a stable signing identity across machines.
-            signingConfig = signingConfigs.getByName("debug")
+            // When RELEASE_KEYSTORE_PATH/etc. are set (CI), sign with the real,
+            // stable release key. Otherwise (local personal builds), fall back to
+            // the auto-generated debug keystore so `assembleRelease` still works
+            // with zero setup - it just won't be upgrade-compatible with the
+            // "real" signed releases published on GitHub.
+            signingConfig = if (hasReleaseSigningEnv) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
