@@ -67,7 +67,7 @@ class SettingsActivity : Activity() {
         statusText.text = getString(R.string.testing_connection)
 
         Thread {
-            val result = HaApiClient.fetchEntityState(baseUrl, token, entityId)
+            val result = HaApiClient.fetchEntityState(applicationContext, baseUrl, token, entityId)
             mainHandler.post {
                 statusText.text = when (result) {
                     is HaResult.Success -> getString(R.string.test_success, result.stateText.take(60))

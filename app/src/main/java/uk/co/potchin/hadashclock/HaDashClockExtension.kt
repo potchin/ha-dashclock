@@ -53,7 +53,7 @@ class HaDashClockExtension : DashClockExtension() {
         val accessToken = HaPrefs.getAccessToken(context)
         val entityId = HaPrefs.getEntityId(context)
 
-        when (val result = HaApiClient.fetchEntityState(baseUrl, accessToken, entityId)) {
+        when (val result = HaApiClient.fetchEntityState(context, baseUrl, accessToken, entityId)) {
             is HaResult.Success -> {
                 val text = result.stateText.trim()
                 val newlineIndex = text.indexOf('\n')
